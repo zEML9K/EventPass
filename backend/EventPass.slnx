@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EventPass.Api/EventPass.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EventPass.Tests/EventPass.Tests.csproj" />
+  </Folder>
+</Solution>
