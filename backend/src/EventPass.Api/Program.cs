@@ -14,7 +14,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Ендпоінт для перевірки стану працездатності сервісу (Health Check)
+// Ендпоінт для перевірки стану працездатності сервісу 
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow }))
    .WithName("HealthCheck");
 
