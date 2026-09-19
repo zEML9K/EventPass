@@ -14,6 +14,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Ендпоінт для перевірки стану працездатності сервісу 
+app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow }))
+   .WithName("HealthCheck");
+
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
