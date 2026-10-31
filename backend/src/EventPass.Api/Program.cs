@@ -6,10 +6,19 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services.AddDbContext<EventPassDbContext>(options =>
     options.UseSqlite("Data Source=eventpass.db"));
 builder.Services.AddScoped<BookingService>();
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 using (var scope = app.Services.CreateScope())
 {
@@ -34,7 +43,6 @@ using (var scope = app.Services.CreateScope())
         db.SaveChanges();
     }
 }
-
 
 // UC-01: Отримати список подій
 app.MapGet("/api/events", async (EventPassDbContext db) =>
