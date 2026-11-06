@@ -1,0 +1,145 @@
+:root {
+  --bg: #f5f6fa;
+  --surface: #ffffff;
+  --text: #1c2030;
+  --muted: #6b7280;
+  --border: #e3e6ee;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --ok-bg: #e6f6ec;  --ok-fg: #15803d;
+  --err-bg: #fdeaea; --err-fg: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121420;
+    --surface: #1b1e2e;
+    --text: #e8eaf2;
+    --muted: #9aa1b5;
+    --border: #2b2f44;
+    --ok-bg: #12301f;  --ok-fg: #6ee7a0;
+    --err-bg: #3a1717; --err-fg: #fca5a5;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app { max-width: 1000px; margin: 0 auto; padding: 24px 16px 48px; }
+
+.header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.header h1 { margin: 0; font-size: 1.6rem; }
+.header h1 span { color: var(--accent); }
+
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.tab {
+  display: flex; flex-direction: column; align-items: flex-start;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px 14px; cursor: pointer; font-size: .95rem;
+}
+.tab small { color: var(--muted); font-size: .72rem; }
+.tab.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+h2, h3 { margin: 0 0 8px; }
+h3 { font-size: 1.05rem; }
+p { margin: 6px 0; }
+.muted { color: var(--muted); font-size: .9rem; margin: 2px 0; }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+
+.list { display: flex; flex-direction: column; gap: 12px; }
+
+.card, .detail {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px;
+}
+.card.selectable { cursor: pointer; transition: border-color .15s; }
+.card.selectable:hover { border-color: var(--accent); }
+.card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card-head { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
+
+.detail { position: sticky; top: 16px; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 16px 0; }
+dt { color: var(--muted); }
+dd { margin: 0; }
+
+.badge { font-size: .78rem; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
+.badge.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.badge.off { background: var(--err-bg); color: var(--err-fg); }
+
+label { display: flex; flex-direction: column; gap: 6px; font-size: .9rem; color: var(--muted); margin-bottom: 14px; }
+input, textarea {
+  font: inherit; color: var(--text); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px;
+}
+input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+button {
+  font: inherit; cursor: pointer; border: 0; border-radius: 8px;
+  padding: 10px 18px; background: var(--accent); color: #fff;
+}
+button:hover:not(:disabled) { background: var(--accent-hover); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); margin-top: 12px; }
+button.link { background: none; color: var(--accent); padding: 0; font-size: .85rem; }
+
+.form { max-width: 560px; }
+.form.narrow { max-width: 420px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.alert { padding: 10px 12px; border-radius: 8px; margin: 12px 0; font-size: .92rem; }
+.alert.success { background: var(--ok-bg); color: var(--ok-fg); }
+.alert.error { background: var(--err-bg); color: var(--err-fg); }
+
+.tickets { display: grid; gap: 12px; }
+.ticket {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border: 1px dashed var(--border); border-radius: 12px; padding: 12px;
+}
+.ticket img { width: 160px; height: 160px; image-rendering: pixelated; background: #fff; padding: 6px; border-radius: 8px; }
+.ticket code { font-size: .75rem; word-break: break-all; text-align: center; color: var(--muted); }
+
+/* --- Пошук --- */
+.search { width: 100%; margin-bottom: 12px; }
+.list-col { display: flex; flex-direction: column; }
+
+/* --- Select --- */
+select {
+  font: inherit; color: var(--text); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px;
+}
+select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.hint { font-size: .8rem; color: var(--muted); margin-top: -8px; margin-bottom: 14px; }
+
+/* --- Історія бронювань --- */
+.bookings { display: flex; flex-direction: column; gap: 12px; }
+.booking-card { padding: 0; }
+.booking-card summary {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 14px 16px; cursor: pointer; list-style: none;
+}
+.booking-card summary::-webkit-details-marker { display: none; }
+.booking-card[open] summary { border-bottom: 1px solid var(--border); }
+.booking-body { padding: 14px 16px; display: grid; gap: 16px; }
+.booking-body h4 { margin: 0 0 8px; font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.booking-body ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.booking-body li { display: flex; justify-content: space-between; gap: 12px; font-size: .9rem; }
+.booking-body code { font-size: .78rem; word-break: break-all; color: var(--muted); }
+.badge.warn { background: var(--border); color: var(--muted); }
+.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
+button.danger { background: var(--err-bg); color: var(--err-fg); justify-self: start; }
+button.danger:hover:not(:disabled) { background: var(--err-fg); color: #fff; }
+
+/* --- QR у історії бронювань --- */
+.booking-body li.ticket-row { justify-content: flex-start; align-items: center; gap: 14px; }
+.ticket-info { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.qr-thumb { width: 112px; height: 112px; flex-shrink: 0; image-rendering: pixelated; background: #fff; padding: 5px; border-radius: 8px; }
