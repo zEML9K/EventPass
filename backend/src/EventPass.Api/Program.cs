@@ -1,7 +1,8 @@
 using EventPass.Api;
-using EventPass.Api.DTO;
 using EventPass.Api.Data;
+using EventPass.Api.DTO;
 using EventPass.Api.Entity;
+using EventPass.Api.Repositories;
 using EventPass.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,11 +11,35 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<EventPassDbContext>(options =>
-    options.UseSqlite("Data Source=eventpass.db"));
+var storageProvider = builder.Configuration["StorageProvider"] ?? "Sqlite";
+
+if (storageProvider.Equals("InMemory", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddSingleton<InMemoryStorage>();
+    builder.Services.AddSingleton<IEventRepository, InMemoryEventRepository>();
+    builder.Services.AddSingleton<IBookingRepository, InMemoryBookingRepository>();
+}
+else
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? EventPassDbContextFactory.GetDefaultSqliteConnectionString();
+
+    builder.Services.AddDbContext<EventPassDbContext>(options =>
+        options.UseSqlite(connectionString));
+
+    builder.Services.AddScoped<IEventRepository, EfEventRepository>();
+    builder.Services.AddScoped<IBookingRepository, EfBookingRepository>();
+}
+
 builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
-builder.Services.AddScoped<BookingService>();
-builder.Services.AddScoped<EventService>();
+
+builder.Services.AddScoped(sp => new BookingService(
+    sp.GetRequiredService<IBookingRepository>(),
+    sp.GetRequiredService<IQrCodeService>()));
+
+builder.Services.AddScoped(sp => new EventService(
+    sp.GetRequiredService<IEventRepository>()));
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -23,33 +48,40 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-using (var scope = app.Services.CreateScope())
+if (!storageProvider.Equals("InMemory", StringComparison.OrdinalIgnoreCase))
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<EventPassDbContext>();
-    db.Database.EnsureCreated();
+    await db.Database.MigrateAsync();
 
-    if (!db.Venues.Any())
+    if (!await db.Venues.AnyAsync())
     {
-        var venue = new Venue { Name = "Артпростір «Вежа»", Address = "КПІ Корпус №1, Берестейський проспект, 37", Capacity = 25 };
+        var venue = new Venue
+        {
+            Name = "Артпростір «Вежа»",
+            Address = "КПІ Корпус №1, Берестейський проспект, 37",
+            Capacity = 25
+        };
         db.Venues.Add(venue);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
 
         db.Events.Add(new Event
         {
             Title = "Програма Кіноекзорцизм",
             Description = "Перегляд психологічного трилера «Мати Іоанна від янголів»",
+            Category = "Кіно",
             Date = DateTime.UtcNow.AddDays(7),
             TotalTickets = 25,
             AvailableSeats = 25,
             VenueId = venue.Id
         });
-        db.SaveChanges();
+        await db.SaveChangesAsync();
     }
 }
 
-// UC-01: Список подій
-app.MapGet("/api/events", async (EventService service) =>
-    Results.Ok(await service.GetAllAsync()));
+// UC-01 + Для Lab5: список подій із пошуком за назвою/описом та фільтрацією за категорією
+app.MapGet("/api/events", async (string? search, string? category, EventService service) =>
+    Results.Ok(await service.GetAllAsync(search, category)));
 
 // UC-01: Одна подія
 app.MapGet("/api/events/{id:int}", async (int id, EventService service) =>
@@ -77,8 +109,8 @@ app.MapGet("/api/bookings", async (BookingService service) =>
 
 app.MapGet("/api/bookings/{id:int}", async (int id, BookingService service) =>
 {
-    var booking = (await service.GetBookingsAsync(id)).FirstOrDefault();
-    return booking == null ? ApiResults.FromError("booking_not_found") : Results.Ok(booking);
+    var list = await service.GetBookingsAsync(id);
+    return list.Count == 0 ? ApiResults.FromError("booking_not_found") : Results.Ok(list[0]);
 });
 
 // UC-05: Скасувати замовлення

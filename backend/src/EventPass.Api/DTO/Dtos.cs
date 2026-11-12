@@ -1,6 +1,14 @@
 namespace EventPass.Api.DTO;
 
-public record CreateEventRequest(string Title, string Description, DateTime Date, int TotalTickets, int VenueId);
+public record CreateEventRequest(
+    string Title,
+    string Description,
+    DateTime Date,
+    int TotalTickets,
+    int VenueId,
+    // Для Lab5: категорія події для фільтрації та початкової міграції БД
+    string Category = "Загальне");
+
 public record BookTicketRequest(int EventId, int Quantity);
 public record CheckTicketRequest(string Token);
 
@@ -12,7 +20,9 @@ public record EventDto(
     int TotalTickets,
     int AvailableSeats,
     string VenueName,
-    string VenueAddress);
+    string VenueAddress,
+    // Для Lab5: передача категорії події клієнту
+    string Category = "Загальне");
 
 public record TicketDto(int Id, string Token, string Status, string? QrCodeBase64 = null);
 public record BookingResponse(int BookingId, int EventId, int Quantity, List<TicketDto> Tickets);
