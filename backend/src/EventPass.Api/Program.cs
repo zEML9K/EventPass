@@ -10,11 +10,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? "Server=127.0.0.1;Port=3308;Database=eventpass_db;User=root;Password=eventpass;";
+
 builder.Services.AddDbContext<EventPassDbContext>(options =>
-    options.UseSqlite("Data Source=eventpass.db"));
+    options.UseMySql(
+        connectionString,
+        ServerVersion.AutoDetect(connectionString)
+    ));
+
 builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<EventService>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -26,11 +34,17 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<EventPassDbContext>();
+    
     db.Database.EnsureCreated();
 
     if (!db.Venues.Any())
     {
-        var venue = new Venue { Name = "Артпростір «Вежа»", Address = "КПІ Корпус №1, Берестейський проспект, 37", Capacity = 25 };
+        var venue = new Venue 
+        { 
+            Name = "Артпростір «Вежа»", 
+            Address = "КПІ Корпус №1, Берестейський проспект, 37", 
+            Capacity = 25 
+        };
         db.Venues.Add(venue);
         db.SaveChanges();
 
