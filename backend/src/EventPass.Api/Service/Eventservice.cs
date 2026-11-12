@@ -3,10 +3,11 @@ using EventPass.Api.Data;
 using EventPass.Api.DTO;
 using EventPass.Api.Entity;
 using Microsoft.EntityFrameworkCore;
+using EventPass.Api.Services.Interfaces;
 
 namespace EventPass.Api.Services;
 
-public sealed class EventService
+public sealed class EventService : IEventService
 {
     private readonly EventPassDbContext _db;
 

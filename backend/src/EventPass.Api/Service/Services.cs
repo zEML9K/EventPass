@@ -2,10 +2,11 @@ using EventPass.Api.DTO;
 using EventPass.Api.Data;
 using EventPass.Api.Entity;
 using Microsoft.EntityFrameworkCore;
+using EventPass.Api.Services.Interfaces;
 
 namespace EventPass.Api.Services;
 
-public sealed class BookingService
+public sealed class BookingService : IBookingService
 {
     private readonly EventPassDbContext _db;
     private readonly IQrCodeService? _qr;
