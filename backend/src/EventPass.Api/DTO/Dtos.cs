@@ -1,6 +1,13 @@
-namespace EventPass.Api.DTO;
+﻿namespace EventPass.Api.DTO;
 
-public record CreateEventRequest(string Title, string Description, DateTime Date, int TotalTickets, int VenueId);
+public record CreateEventRequest(
+    string Title,
+    string Description,
+    DateTime Date,
+    int TotalTickets,
+    int VenueId,
+    string? Category = null);
+
 public record BookTicketRequest(int EventId, int Quantity);
 public record CheckTicketRequest(string Token);
 
@@ -12,7 +19,8 @@ public record EventDto(
     int TotalTickets,
     int AvailableSeats,
     string VenueName,
-    string VenueAddress);
+    string VenueAddress,
+    string Category = "");
 
 public record TicketDto(int Id, string Token, string Status, string? QrCodeBase64 = null);
 public record BookingResponse(int BookingId, int EventId, int Quantity, List<TicketDto> Tickets);

@@ -92,6 +92,13 @@ namespace EventPass.Api.Migrations
                     b.Property<int>("AvailableSeats")
                         .HasColumnType("int");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue("");
+
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime(6)");
 
