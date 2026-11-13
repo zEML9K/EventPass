@@ -24,9 +24,6 @@ public sealed class EfBookingRepository : IBookingRepository
             return (false, exists ? "insufficient_seats" : "event_not_found", null);
         }
 
-        var tracked = _db.ChangeTracker.Entries<Event>().FirstOrDefault(e => e.Entity.Id == eventId);
-        if (tracked != null) await tracked.ReloadAsync();
-
         var booking = new Booking
         {
             EventId = eventId,

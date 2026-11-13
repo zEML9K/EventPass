@@ -1,6 +1,7 @@
 using EventPass.Api.Data;
 using EventPass.Api.DTO;
 using EventPass.Api.Entity;
+using EventPass.Api.Repositories;
 using EventPass.Api.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -19,17 +20,20 @@ public class BookingServiceExtraTests
         return db;
     }
 
+    private static BookingService NewService(EventPassDbContext db, IQrCodeService? qr = null) =>
+        new(new EfBookingRepository(db), qr);
+
     [Fact]
     public async Task BookTickets_ShouldFail_WhenQuantityInvalid()
     {
-        var result = await new BookingService(CreateDb()).BookTicketsAsync(new BookTicketRequest(1, 0));
+        var result = await NewService(CreateDb()).BookTicketsAsync(new BookTicketRequest(1, 0));
         Assert.Equal("invalid_quantity", result.ErrorCode);
     }
 
     [Fact]
     public async Task BookTickets_ShouldFail_WhenEventNotFound()
     {
-        var result = await new BookingService(CreateDb()).BookTicketsAsync(new BookTicketRequest(999, 1));
+        var result = await NewService(CreateDb()).BookTicketsAsync(new BookTicketRequest(999, 1));
         Assert.Equal("event_not_found", result.ErrorCode);
     }
 
@@ -44,7 +48,7 @@ public class BookingServiceExtraTests
         db.Events.Add(ev);
         await db.SaveChangesAsync();
 
-        var result = await new BookingService(db).BookTicketsAsync(new BookTicketRequest(ev.Id, 2));
+        var result = await NewService(db).BookTicketsAsync(new BookTicketRequest(ev.Id, 2));
 
         Assert.Equal("insufficient_seats", result.ErrorCode);
         Assert.Empty(db.Bookings);
@@ -62,7 +66,7 @@ public class BookingServiceExtraTests
         db.Events.Add(ev);
         await db.SaveChangesAsync();
 
-        var result = await new BookingService(db, new QrCodeService()).BookTicketsAsync(new BookTicketRequest(ev.Id, 1));
+        var result = await NewService(db, new QrCodeService()).BookTicketsAsync(new BookTicketRequest(ev.Id, 1));
 
         Assert.False(string.IsNullOrEmpty(result.Result!.Tickets[0].QrCodeBase64));
         var history = await db.BookingHistories.SingleAsync();
@@ -80,7 +84,7 @@ public class BookingServiceExtraTests
         db.Events.Add(ev);
         await db.SaveChangesAsync();
 
-        var service = new BookingService(db);
+        var service = NewService(db);
         await service.BookTicketsAsync(new BookTicketRequest(ev.Id, 2));
 
         var list = await service.GetBookingsAsync();
@@ -104,7 +108,7 @@ public class BookingServiceExtraTests
         db.Events.Add(ev);
         await db.SaveChangesAsync();
 
-        var service = new BookingService(db, new QrCodeService());
+        var service = NewService(db, new QrCodeService());
         var booked = await service.BookTicketsAsync(new BookTicketRequest(ev.Id, 2));
         await service.CheckTicketAsync(booked.Result!.Tickets[0].Token); // перший квиток -> Scanned
 
@@ -120,7 +124,7 @@ public class BookingServiceExtraTests
     [InlineData("   ")]
     public async Task CheckTicket_ShouldReturnInvalidToken_WhenEmpty(string? token)
     {
-        var result = await new BookingService(CreateDb()).CheckTicketAsync(token);
+        var result = await NewService(CreateDb()).CheckTicketAsync(token);
         Assert.Equal("invalid_token", result.ErrorCode);
     }
 
@@ -140,7 +144,7 @@ public class BookingServiceExtraTests
         db.QrTickets.Add(new QrTicket { Token = "c1", Status = TicketStatus.Cancelled, BookingId = booking.Id });
         await db.SaveChangesAsync();
 
-        var result = await new BookingService(db).CheckTicketAsync("c1");
+        var result = await NewService(db).CheckTicketAsync("c1");
         Assert.Equal("ticket_cancelled", result.ErrorCode);
     }
 }

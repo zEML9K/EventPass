@@ -1,6 +1,7 @@
 using EventPass.Api.Data;
 using EventPass.Api.DTO;
 using EventPass.Api.Entity;
+using EventPass.Api.Repositories;
 using EventPass.Api.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +25,7 @@ public class CancelBookingTests
         db.Events.Add(ev);
         await db.SaveChangesAsync();
 
-        var service = new BookingService(db);
+        var service = new BookingService(new EfBookingRepository(db));
         var booked = await service.BookTicketsAsync(new BookTicketRequest(ev.Id, quantity));
         return (db, service, ev.Id, booked.Result!.BookingId);
     }
