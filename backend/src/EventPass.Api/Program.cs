@@ -4,17 +4,25 @@ using EventPass.Api.Data;
 using EventPass.Api.Entity;
 using EventPass.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using EventPass.Api.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not set.");
+
 builder.Services.AddDbContext<EventPassDbContext>(options =>
-    options.UseSqlite("Data Source=eventpass.db"));
+    options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0))));
+
 builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
+builder.Services.AddScoped<IEventRepository, EfEventRepository>();
+builder.Services.AddScoped<IBookingRepository, EfBookingRepository>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<EventService>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -26,11 +34,17 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<EventPassDbContext>();
-    db.Database.EnsureCreated();
+    
+    db.Database.Migrate();
 
     if (!db.Venues.Any())
     {
-        var venue = new Venue { Name = "Артпростір «Вежа»", Address = "КПІ Корпус №1, Берестейський проспект, 37", Capacity = 25 };
+        var venue = new Venue 
+        { 
+            Name = "Артпростір «Вежа»", 
+            Address = "КПІ Корпус №1, Берестейський проспект, 37", 
+            Capacity = 25 
+        };
         db.Venues.Add(venue);
         db.SaveChanges();
 

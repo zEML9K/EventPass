@@ -1,6 +1,7 @@
 using EventPass.Api.Data;
 using EventPass.Api.DTO;
 using EventPass.Api.Entity;
+using EventPass.Api.Repositories;
 using EventPass.Api.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,9 @@ public class EventServiceTests
         return (db, venue);
     }
 
+    private static EventService NewService(EventPassDbContext db) =>
+        new(new EfEventRepository(db));
+
     private static CreateEventRequest Req(int venueId, int tickets = 50, string title = "Conf", DateTime? date = null) =>
         new(title, "Desc", date ?? DateTime.UtcNow.AddDays(5), tickets, venueId);
 
@@ -30,7 +34,7 @@ public class EventServiceTests
     public async Task CreateEvent_ShouldSucceed_AndSetAvailableSeats()
     {
         var (db, venue) = await SetupAsync();
-        var result = await new EventService(db).CreateEventAsync(Req(venue.Id, 40));
+        var result = await NewService(db).CreateEventAsync(Req(venue.Id, 40));
 
         Assert.True(result.Success);
         Assert.Equal(40, result.Result!.AvailableSeats);
@@ -41,7 +45,7 @@ public class EventServiceTests
     public async Task CreateEvent_ShouldFail_WhenTicketsExceedCapacity()
     {
         var (db, venue) = await SetupAsync(capacity: 10);
-        var result = await new EventService(db).CreateEventAsync(Req(venue.Id, 11));
+        var result = await NewService(db).CreateEventAsync(Req(venue.Id, 11));
 
         Assert.False(result.Success);
         Assert.Equal("tickets_exceed_capacity", result.ErrorCode);
@@ -52,7 +56,7 @@ public class EventServiceTests
     public async Task CreateEvent_ShouldFail_WhenVenueNotFound()
     {
         var (db, _) = await SetupAsync();
-        var result = await new EventService(db).CreateEventAsync(Req(999));
+        var result = await NewService(db).CreateEventAsync(Req(999));
         Assert.Equal("venue_not_found", result.ErrorCode);
     }
 
@@ -63,7 +67,7 @@ public class EventServiceTests
     public async Task CreateEvent_ShouldFail_OnInvalidData(string title, int tickets, int daysFromNow, string code)
     {
         var (db, venue) = await SetupAsync();
-        var result = await new EventService(db)
+        var result = await NewService(db)
             .CreateEventAsync(Req(venue.Id, tickets, title, DateTime.UtcNow.AddDays(daysFromNow)));
 
         Assert.Equal(code, result.ErrorCode);
@@ -74,7 +78,7 @@ public class EventServiceTests
     public async Task GetById_ShouldReturnNotFound_ForMissingEvent()
     {
         var (db, _) = await SetupAsync();
-        var result = await new EventService(db).GetByIdAsync(42);
+        var result = await NewService(db).GetByIdAsync(42);
         Assert.Equal("event_not_found", result.ErrorCode);
     }
 }

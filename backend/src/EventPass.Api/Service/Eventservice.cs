@@ -1,36 +1,25 @@
-using System.Linq.Expressions;
-using EventPass.Api.Data;
 using EventPass.Api.DTO;
 using EventPass.Api.Entity;
-using Microsoft.EntityFrameworkCore;
+using EventPass.Api.Repositories;
 
 namespace EventPass.Api.Services;
 
 public sealed class EventService
 {
-    private readonly EventPassDbContext _db;
+    private readonly IEventRepository _repo;
 
-    public EventService(EventPassDbContext db) => _db = db;
-
-    private static readonly Expression<Func<Event, EventDto>> ToDto = e => new EventDto(
-        e.Id, e.Title, e.Description, e.Date, e.TotalTickets, e.AvailableSeats,
-        e.Venue!.Name, e.Venue!.Address);
+    public EventService(IEventRepository repo) => _repo = repo;
 
     // Список локацій (для вибору при створенні події)
-    public Task<List<VenueDto>> GetVenuesAsync() =>
-        _db.Venues.AsNoTracking()
-            .OrderBy(v => v.Name)
-            .Select(v => new VenueDto(v.Id, v.Name, v.Address, v.Capacity))
-            .ToListAsync();
+    public Task<List<VenueDto>> GetVenuesAsync() => _repo.GetVenuesAsync();
 
     // UC-01: список подій
-    public Task<List<EventDto>> GetAllAsync() =>
-        _db.Events.AsNoTracking().OrderBy(e => e.Date).Select(ToDto).ToListAsync();
+    public Task<List<EventDto>> GetAllAsync() => _repo.GetEventsAsync();
 
     // UC-01: одна подія
     public async Task<(bool Success, string? ErrorCode, EventDto? Result)> GetByIdAsync(int id)
     {
-        var dto = await _db.Events.AsNoTracking().Where(e => e.Id == id).Select(ToDto).FirstOrDefaultAsync();
+        var dto = await _repo.GetEventByIdAsync(id);
         return dto == null ? (false, "event_not_found", null) : (true, null, dto);
     }
 
@@ -56,7 +45,7 @@ public sealed class EventService
             return (false, "invalid_total_tickets", null);
 
         // Локація має існувати
-        var venue = await _db.Venues.AsNoTracking().FirstOrDefaultAsync(v => v.Id == request.VenueId);
+        var venue = await _repo.GetVenueByIdAsync(request.VenueId);
         if (venue == null)
             return (false, "venue_not_found", null);
 
@@ -74,8 +63,7 @@ public sealed class EventService
             VenueId = venue.Id
         };
 
-        _db.Events.Add(ev);
-        await _db.SaveChangesAsync();
+        await _repo.AddEventAsync(ev);
 
         return (true, null, new EventDto(ev.Id, ev.Title, ev.Description, ev.Date,
             ev.TotalTickets, ev.AvailableSeats, venue.Name, venue.Address));
