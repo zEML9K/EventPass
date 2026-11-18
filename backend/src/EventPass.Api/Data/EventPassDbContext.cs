@@ -12,6 +12,7 @@ public sealed class EventPassDbContext : DbContext
     public DbSet<QrTicket> QrTickets => Set<QrTicket>();
     public DbSet<BookingHistory> BookingHistories => Set<BookingHistory>();
     public DbSet<EventReview> EventReviews => Set<EventReview>();
+    public DbSet<EventReport> EventReports => Set<EventReport>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +50,20 @@ public sealed class EventPassDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Rating).IsRequired();
             e.Property(x => x.Comment).IsRequired().HasMaxLength(300).HasDefaultValue("");
+            e.HasOne(x => x.Event).WithMany()
+                .HasForeignKey(x => x.EventId)
+                .IsRequired().OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<EventReport>(e =>
+        {
+            e.ToTable("EventReports");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Category).IsRequired().HasMaxLength(100);
+            e.Property(x => x.Comment).IsRequired().HasMaxLength(500).HasDefaultValue("");
+            e.Property(x => x.ClientId).IsRequired().HasMaxLength(64).HasDefaultValue("");
+            e.Property(x => x.ClientIp).IsRequired().HasMaxLength(64).HasDefaultValue("");
+            e.HasIndex(x => new { x.EventId, x.ClientId });
             e.HasOne(x => x.Event).WithMany()
                 .HasForeignKey(x => x.EventId)
                 .IsRequired().OnDelete(DeleteBehavior.Cascade);

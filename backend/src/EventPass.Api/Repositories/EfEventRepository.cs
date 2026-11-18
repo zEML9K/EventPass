@@ -57,7 +57,6 @@ public sealed class EfEventRepository : IEventRepository
             .FirstOrDefaultAsync(v => v.Id == venueId);
     }
 
-    // Category event and filter category
     public async Task<List<EventDto>> GetEventsAsync(string? category = null)
     {
         List<Event> allEvents = await _db.Events
@@ -155,5 +154,37 @@ public sealed class EfEventRepository : IEventRepository
             .OrderByDescending(r => r.CreatedAt)
             .Select(r => new EventReviewDto(r.Id, r.Rating, r.Comment, r.CreatedAt))
             .ToListAsync();
+    }
+
+    public async Task<(bool Success, string? ErrorCode)> AddReportAsync(
+        int eventId, string category, string comment, string clientId, string clientIp)
+    {
+        var ev = await _db.Events.FindAsync(eventId);
+        if (ev == null)
+        {
+            return (false, "event_not_found");
+        }
+
+        bool duplicate = !string.IsNullOrEmpty(clientId)
+            ? await _db.EventReports.AnyAsync(r => r.EventId == eventId && r.ClientId == clientId)
+            : (!string.IsNullOrEmpty(clientIp) && await _db.EventReports.AnyAsync(r => r.EventId == eventId && r.ClientIp == clientIp));
+
+        if (duplicate)
+        {
+            return (false, "already_reported");
+        }
+
+        _db.EventReports.Add(new EventReport
+        {
+            EventId = eventId,
+            Category = category,
+            Comment = comment ?? string.Empty,
+            ClientId = clientId,
+            ClientIp = clientIp,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _db.SaveChangesAsync();
+        return (true, null);
     }
 }

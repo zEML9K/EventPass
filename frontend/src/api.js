@@ -52,6 +52,8 @@ export const api = {
   getEventReviews: (id) => request(`/api/events/${id}/reviews`),
   rateEvent: (id, rating, comment) =>
     post(`/api/events/${id}/reviews`, { rating, comment, clientId: getClientId() }),
+  reportEvent: (id, category, comment) =>
+    post(`/api/events/${id}/reports`, { category, comment, clientId: getClientId() }),
   getVenues: () => request("/api/venues"),
   getBookings: () => request("/api/bookings"),
   cancelBooking: (id) => post(`/api/bookings/${id}/cancel`, {}),

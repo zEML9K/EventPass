@@ -6,6 +6,7 @@ import BookingsView from "./components/BookingsView.jsx";
 
 const TABS = [
   { id: "events", label: "Події", role: "Відвідувач" },
+  { id: "favorites", label: "Обране", role: "Закладки" },
   { id: "bookings", label: "Мої бронювання", role: "Відвідувач" },
   { id: "create", label: "Створити подію", role: "Організатор" },
   { id: "scan", label: "Перевірка квитків", role: "Контролер" },
@@ -26,7 +27,7 @@ export default function App() {
           {TABS.map((t) => (
             <button
               key={t.id}
-              className={tab === t.id ? "tab active" : "tab"}
+              className={tab === t.id || (tab === "favorites" && t.id === "favorites") ? "tab active" : "tab"}
               onClick={() => setTab(t.id)}
             >
               {t.label}
@@ -37,7 +38,9 @@ export default function App() {
       </header>
 
       <main>
-        {tab === "events" && <EventsView key={version} />}
+        {(tab === "events" || tab === "favorites") && (
+          <EventsView key={version + "-" + tab} initialFavoriteFilter={tab === "favorites"} />
+        )}
         {tab === "bookings" && <BookingsView />}
         {tab === "create" && (
           <CreateEventView

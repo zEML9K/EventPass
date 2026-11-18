@@ -134,6 +134,53 @@ namespace EventPass.Api.Migrations
                     b.ToTable("Events", (string)null);
                 });
 
+            modelBuilder.Entity("EventPass.Api.Entity.EventReport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("ClientIp")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasDefaultValue("");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("EventId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId", "ClientId");
+
+                    b.ToTable("EventReports", (string)null);
+                });
+
             modelBuilder.Entity("EventPass.Api.Entity.EventReview", b =>
                 {
                     b.Property<int>("Id")
@@ -264,6 +311,17 @@ namespace EventPass.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Venue");
+                });
+
+            modelBuilder.Entity("EventPass.Api.Entity.EventReport", b =>
+                {
+                    b.HasOne("EventPass.Api.Entity.Event", "Event")
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
                 });
 
             modelBuilder.Entity("EventPass.Api.Entity.EventReview", b =>

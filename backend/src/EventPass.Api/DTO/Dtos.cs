@@ -44,3 +44,6 @@ public record BookingDetailsDto(
     List<BookingHistoryDto> History);
 
 public record ApiError(string Code, string Message);
+
+public record CreateReportRequest(string Category, string? Comment = null, string? ClientId = null);
+public record EventReportDto(int Id, string Category, string Comment, DateTime CreatedAt);
