@@ -20,7 +20,12 @@ public record EventDto(
     int AvailableSeats,
     string VenueName,
     string VenueAddress,
-    string Category = "");
+    string Category = "",
+    double AverageRating = 0,
+    int ReviewsCount = 0);
+
+public record RateEventRequest(int Rating, string? Comment = null, string? ClientId = null);
+public record EventReviewDto(int Id, int Rating, string Comment, DateTime CreatedAt);
 
 public record TicketDto(int Id, string Token, string Status, string? QrCodeBase64 = null);
 public record BookingResponse(int BookingId, int EventId, int Quantity, List<TicketDto> Tickets);

@@ -1,6 +1,14 @@
-// Тонка обгортка над fetch. Усі помилки бекенду (ApiError {code, message})
-// перетворюються на Error із зрозумілим повідомленням.
-const BASE = import.meta.env.VITE_API_URL ?? "";
+﻿const BASE = import.meta.env.VITE_API_URL ?? "";
+
+function getClientId() {
+  const key = "eventpass_client_id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
 
 export class ApiError extends Error {
   constructor(message, code, status) {
@@ -36,12 +44,14 @@ const post = (path, body) =>
   request(path, { method: "POST", body: JSON.stringify(body) });
 
 export const api = {
-  // Category event and filter category
   getEvents: (category) => {
     const query = category ? `?category=${encodeURIComponent(category)}` : "";
     return request(`/api/events${query}`);
   },
   getEvent: (id) => request(`/api/events/${id}`),
+  getEventReviews: (id) => request(`/api/events/${id}/reviews`),
+  rateEvent: (id, rating, comment) =>
+    post(`/api/events/${id}/reviews`, { rating, comment, clientId: getClientId() }),
   getVenues: () => request("/api/venues"),
   getBookings: () => request("/api/bookings"),
   cancelBooking: (id) => post(`/api/bookings/${id}/cancel`, {}),

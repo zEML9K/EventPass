@@ -1,4 +1,4 @@
-using EventPass.Api.Data;
+﻿using EventPass.Api.Data;
 using EventPass.Api.DTO;
 using EventPass.Api.Entity;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +28,9 @@ public sealed class EfEventRepository : IEventRepository
             e.AvailableSeats,
             venueName,
             venueAddress,
-            e.Category
+            e.Category,
+            e.AverageRating,
+            e.ReviewsCount
         );
     }
 
@@ -101,5 +103,57 @@ public sealed class EfEventRepository : IEventRepository
         _db.Events.Add(ev);
         await _db.SaveChangesAsync();
         return ev;
+    }
+
+    public async Task<(bool Success, string? ErrorCode, EventDto? UpdatedEvent)> AddReviewAsync(
+        int eventId, int rating, string comment, double newAverage, int newCount, string clientId, string clientIp)
+    {
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
+        Event? ev = await _db.Events
+            .Include(e => e.Venue)
+            .FirstOrDefaultAsync(e => e.Id == eventId);
+
+        if (ev == null)
+        {
+            return (false, "event_not_found", null);
+        }
+
+        bool duplicate = !string.IsNullOrEmpty(clientId)
+            ? await _db.EventReviews.AnyAsync(r => r.EventId == eventId && r.ClientId == clientId)
+            : (!string.IsNullOrEmpty(clientIp) && await _db.EventReviews.AnyAsync(r => r.EventId == eventId && r.ClientIp == clientIp));
+
+        if (duplicate)
+        {
+            return (false, "already_rated", null);
+        }
+
+        _db.EventReviews.Add(new EventReview
+        {
+            EventId = eventId,
+            Rating = rating,
+            Comment = comment,
+            ClientId = clientId,
+            ClientIp = clientIp,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ev.AverageRating = newAverage;
+        ev.ReviewsCount = newCount;
+
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return (true, null, MapToDto(ev));
+    }
+
+    public async Task<List<EventReviewDto>> GetReviewsAsync(int eventId)
+    {
+        return await _db.EventReviews
+            .AsNoTracking()
+            .Where(r => r.EventId == eventId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new EventReviewDto(r.Id, r.Rating, r.Comment, r.CreatedAt))
+            .ToListAsync();
     }
 }

@@ -83,6 +83,17 @@ app.MapPost("/api/events", async (CreateEventRequest req, EventService service) 
 });
 
 // Локації (для випадаючого списку при створенні події)
+
+// Оцінки та відгуки про подію
+app.MapGet("/api/events/{id:int}/reviews", async (int id, EventService service) =>
+    Results.Ok(await service.GetReviewsAsync(id)));
+
+app.MapPost("/api/events/{id:int}/reviews", async Task<IResult> (int id, RateEventRequest req, HttpContext http, EventService service) =>
+{
+    var ip = http.Connection.RemoteIpAddress?.ToString();
+    var (success, errorCode, result) = await service.RateEventAsync(id, req, ip);
+    return success ? Results.Ok(result) : ApiResults.FromError(errorCode);
+});
 app.MapGet("/api/venues", async (EventService service) =>
     Results.Ok(await service.GetVenuesAsync()));
 
@@ -122,3 +133,5 @@ app.MapPost("/api/tickets/check", async (CheckTicketRequest req, BookingService 
 app.Run();
 
 public partial class Program { }
+
+

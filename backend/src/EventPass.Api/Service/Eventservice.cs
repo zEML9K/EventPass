@@ -1,4 +1,5 @@
-﻿using EventPass.Api.DTO;
+﻿using EventPass.Api.Rules;
+using EventPass.Api.DTO;
 using EventPass.Api.Entity;
 using EventPass.Api.Repositories;
 
@@ -67,4 +68,32 @@ public sealed class EventService
             ev.TotalTickets, ev.AvailableSeats, venue.Name, venue.Address,
             ev.Category));
     }
+
+    // Оцінки та відгуки про подію
+    public Task<List<EventReviewDto>> GetReviewsAsync(int eventId) => _repo.GetReviewsAsync(eventId);
+
+    public async Task<(bool Success, string? ErrorCode, EventDto? Result)> RateEventAsync(int eventId, RateEventRequest request, string? clientIp = null)
+    {
+        var (isValid, comment, errorCode) = EventRatingRule.Validate(request.Rating, request.Comment);
+        if (!isValid)
+            return (false, errorCode, null);
+
+        var existing = await _repo.GetEventByIdAsync(eventId);
+        if (existing == null)
+            return (false, "event_not_found", null);
+
+        var normalizedClientId = (request.ClientId ?? string.Empty).Trim();
+        if (normalizedClientId.Length > 64)
+            normalizedClientId = normalizedClientId[..64];
+
+        var normalizedIp = (clientIp ?? string.Empty).Trim();
+        if (normalizedIp.Length > 64)
+            normalizedIp = normalizedIp[..64];
+
+        var (newAvg, newCount) = EventRatingRule.CalculateNewRating(
+            existing.AverageRating, existing.ReviewsCount, request.Rating);
+
+        return await _repo.AddReviewAsync(eventId, request.Rating, comment, newAvg, newCount, normalizedClientId, normalizedIp);
+    }
 }
+
