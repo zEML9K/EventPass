@@ -7,6 +7,7 @@ public interface IEventRepository
 {
     Task<List<VenueDto>> GetVenuesAsync();
     Task<Venue?> GetVenueByIdAsync(int venueId);
+    Task<bool> EventExistsAsync(int eventId);
     Task<List<EventDto>> GetEventsAsync(string? category = null);
     Task<EventDto?> GetEventByIdAsync(int id);
     Task<Event> AddEventAsync(Event ev);
