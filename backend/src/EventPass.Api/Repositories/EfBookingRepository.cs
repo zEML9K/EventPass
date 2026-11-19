@@ -31,7 +31,7 @@ public sealed class EfBookingRepository : IBookingRepository
             Status = BookingStatus.Confirmed
         };
 
-        for (int i = 0; i < quantity; i++)
+        for (var i = 0; i < quantity; i++)
         {
             booking.Tickets.Add(new QrTicket
             {
@@ -60,31 +60,36 @@ public sealed class EfBookingRepository : IBookingRepository
     {
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
+        var booking = await _db.Bookings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
+
+        if (booking == null)
+            return (false, "booking_not_found");
+
+        if (booking.Status == BookingStatus.Cancelled)
+            return (false, "booking_already_cancelled");
+
+        var cancellableTicketsCount = await _db.QrTickets
+            .CountAsync(t => t.BookingId == bookingId && t.Status == TicketStatus.Valid);
+
+        if (cancellableTicketsCount == 0)
+            return (false, "booking_not_cancellable");
+
         var bookingUpdated = await _db.Bookings
             .Where(b => b.Id == bookingId && b.Status == BookingStatus.Confirmed)
             .ExecuteUpdateAsync(s => s.SetProperty(b => b.Status, BookingStatus.Cancelled));
 
         if (bookingUpdated == 0)
-        {
-            var exists = await _db.Bookings.AnyAsync(b => b.Id == bookingId);
-            return (false, exists ? "booking_already_cancelled" : "booking_not_found");
-        }
+            return (false, "booking_already_cancelled");
 
-        var cancelledTickets = await _db.QrTickets
+        await _db.QrTickets
             .Where(t => t.BookingId == bookingId && t.Status == TicketStatus.Valid)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.Status, TicketStatus.Cancelled));
 
-        if (cancelledTickets == 0)
-            return (false, "booking_not_cancellable");
-
-        var eventId = await _db.Bookings
-            .Where(b => b.Id == bookingId)
-            .Select(b => b.EventId)
-            .SingleAsync();
-
         await _db.Events
-            .Where(e => e.Id == eventId)
-            .ExecuteUpdateAsync(s => s.SetProperty(e => e.AvailableSeats, e => e.AvailableSeats + cancelledTickets));
+            .Where(e => e.Id == booking.EventId)
+            .ExecuteUpdateAsync(s => s.SetProperty(e => e.AvailableSeats, e => e.AvailableSeats + cancellableTicketsCount));
 
         _db.BookingHistories.Add(new BookingHistory
         {
@@ -115,15 +120,13 @@ public sealed class EfBookingRepository : IBookingRepository
             .ToListAsync();
     }
 
-    public async Task<List<BookingHistory>> GetHistoryAsync(List<int> bookingIds)
-    {
-        return (await _db.BookingHistories.AsNoTracking()
-                .Where(h => bookingIds.Contains(h.BookingId))
-                .ToListAsync())
+    public Task<List<BookingHistory>> GetHistoryAsync(List<int> bookingIds) =>
+        _db.BookingHistories
+            .AsNoTracking()
+            .Where(h => bookingIds.Contains(h.BookingId))
             .OrderBy(h => h.ChangedAt)
             .ThenBy(h => h.Id)
-            .ToList();
-    }
+            .ToListAsync();
 
     public async Task<(bool Scanned, QrTicket? Ticket)> ScanTicketAsync(string token)
     {

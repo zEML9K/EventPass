@@ -2,7 +2,7 @@
 
 namespace EventPass.Api;
 
-/// <summary>Єдине місце відповідності код помилки -> HTTP-статус і повідомлення.</summary>
+/// <summary>Єдине місце відповідності коду помилки -> HTTP-статус і повідомлення.</summary>
 public static class ApiResults
 {
     private static readonly Dictionary<string, (int Status, string Message)> Map = new()
@@ -10,6 +10,8 @@ public static class ApiResults
         // UC-02
         ["invalid_title"]            = (400, "Назва події обов'язкова (до 200 символів)."),
         ["invalid_description"]      = (400, "Опис події обов'язковий."),
+        ["invalid_category"]         = (400, "Категорія події обов'язкова."),
+        ["category_too_long"]        = (400, "Назва категорії не може перевищувати 50 символів."),
         ["invalid_date"]             = (400, "Дата події має бути в майбутньому."),
         ["invalid_total_tickets"]    = (400, "Кількість квитків має бути більшою за нуль."),
         ["venue_not_found"]          = (404, "Локацію не знайдено."),
@@ -26,12 +28,18 @@ public static class ApiResults
         // UC-04
         ["invalid_token"]            = (400, "Токен квитка не може бути порожнім."),
         ["ticket_not_found"]         = (404, "Квиток не знайдено."),
-        ["ticket_already_used"]      = (409, "Квиток вже використано."),
+        ["ticket_already_used"]      = (409, "Квиток уже використано."),
         ["ticket_cancelled"]         = (409, "Квиток скасовано."),
-        // Event ratings
+
+        // Event ratings & reviews
         ["invalid_rating"]           = (400, "Оцінка має бути від 1 до 5."),
         ["invalid_review_comment"]   = (400, "Коментар не може перевищувати 300 символів."),
         ["already_rated"]            = (409, "Ви вже залишили оцінку для цієї події."),
+
+        // Event reports
+        ["invalid_report_category"]  = (400, "Категорія скарги обов'язкова."),
+        ["invalid_report_comment"]   = (400, "Коментар скарги не може перевищувати 500 символів."),
+        ["already_reported"]         = (409, "Ви вже надіслали скаргу щодо цієї події."),
     };
 
     public static IResult FromError(string? code)
@@ -42,4 +50,3 @@ public static class ApiResults
         return Results.Json(new ApiError(code ?? "invalid_request", "Некоректний запит."), statusCode: 400);
     }
 }
-

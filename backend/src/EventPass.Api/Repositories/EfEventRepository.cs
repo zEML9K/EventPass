@@ -9,15 +9,12 @@ public sealed class EfEventRepository : IEventRepository
 {
     private readonly EventPassDbContext _db;
 
-    public EfEventRepository(EventPassDbContext db)
-    {
-        _db = db;
-    }
+    public EfEventRepository(EventPassDbContext db) => _db = db;
 
     private static EventDto MapToDto(Event e)
     {
-        string venueName = e.Venue != null ? e.Venue.Name : string.Empty;
-        string venueAddress = e.Venue != null ? e.Venue.Address : string.Empty;
+        var venueName = e.Venue?.Name ?? string.Empty;
+        var venueAddress = e.Venue?.Address ?? string.Empty;
 
         return new EventDto(
             e.Id,
@@ -34,67 +31,74 @@ public sealed class EfEventRepository : IEventRepository
         );
     }
 
+    private async Task<bool> IsDuplicateByClientAsync<TEntity>(
+        IQueryable<TEntity> source,
+        int eventId,
+        string clientId,
+        string clientIp) where TEntity : class
+    {
+        if (!string.IsNullOrEmpty(clientId))
+        {
+            return await source
+                .Where(x => EF.Property<int>(x, "EventId") == eventId &&
+                            EF.Property<string>(x, "ClientId") == clientId)
+                .AnyAsync();
+        }
+
+        if (!string.IsNullOrEmpty(clientIp))
+        {
+            return await source
+                .Where(x => EF.Property<int>(x, "EventId") == eventId &&
+                            EF.Property<string>(x, "ClientIp") == clientIp)
+                .AnyAsync();
+        }
+
+        return false;
+    }
+
     public async Task<List<VenueDto>> GetVenuesAsync()
     {
-        List<Venue> venues = await _db.Venues
+        var venues = await _db.Venues
             .AsNoTracking()
             .OrderBy(v => v.Name)
             .ToListAsync();
 
-        var result = new List<VenueDto>();
-        foreach (Venue v in venues)
-        {
-            result.Add(new VenueDto(v.Id, v.Name, v.Address, v.Capacity));
-        }
-
-        return result;
+        return venues
+            .Select(v => new VenueDto(v.Id, v.Name, v.Address, v.Capacity))
+            .ToList();
     }
 
-    public async Task<Venue?> GetVenueByIdAsync(int venueId)
-    {
-        return await _db.Venues
-            .AsNoTracking()
-            .FirstOrDefaultAsync(v => v.Id == venueId);
-    }
+    public Task<Venue?> GetVenueByIdAsync(int venueId) =>
+        _db.Venues.AsNoTracking().FirstOrDefaultAsync(v => v.Id == venueId);
+
+    public Task<bool> EventExistsAsync(int eventId) =>
+        _db.Events.AsNoTracking().AnyAsync(e => e.Id == eventId);
 
     public async Task<List<EventDto>> GetEventsAsync(string? category = null)
     {
-        List<Event> allEvents = await _db.Events
+        var query = _db.Events
             .AsNoTracking()
             .Include(e => e.Venue)
-            .OrderBy(e => e.Date)
-            .ToListAsync();
+            .AsQueryable();
 
-        string? filter = category?.Trim();
-        bool hasFilter = !string.IsNullOrEmpty(filter);
-
-        var result = new List<EventDto>();
-        foreach (Event ev in allEvents)
+        var filter = category?.Trim();
+        if (!string.IsNullOrEmpty(filter))
         {
-            if (hasFilter && !string.Equals(ev.Category, filter, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            result.Add(MapToDto(ev));
+            query = query.Where(e => e.Category.ToLower() == filter.ToLower());
         }
 
-        return result;
+        var events = await query.OrderBy(e => e.Date).ToListAsync();
+        return events.Select(MapToDto).ToList();
     }
 
     public async Task<EventDto?> GetEventByIdAsync(int id)
     {
-        Event? ev = await _db.Events
+        var ev = await _db.Events
             .AsNoTracking()
             .Include(e => e.Venue)
             .FirstOrDefaultAsync(e => e.Id == id);
 
-        if (ev == null)
-        {
-            return null;
-        }
-
-        return MapToDto(ev);
+        return ev == null ? null : MapToDto(ev);
     }
 
     public async Task<Event> AddEventAsync(Event ev)
@@ -107,24 +111,22 @@ public sealed class EfEventRepository : IEventRepository
     public async Task<(bool Success, string? ErrorCode, EventDto? UpdatedEvent)> AddReviewAsync(
         int eventId, int rating, string comment, double newAverage, int newCount, string clientId, string clientIp)
     {
+        if (!await EventExistsAsync(eventId))
+            return (false, "event_not_found", null);
+
+        if (await IsDuplicateByClientAsync(_db.EventReviews.AsNoTracking(), eventId, clientId, clientIp))
+            return (false, "already_rated", null);
+
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        Event? ev = await _db.Events
+        var ev = await _db.Events
             .Include(e => e.Venue)
             .FirstOrDefaultAsync(e => e.Id == eventId);
 
         if (ev == null)
         {
+            await transaction.RollbackAsync();
             return (false, "event_not_found", null);
-        }
-
-        bool duplicate = !string.IsNullOrEmpty(clientId)
-            ? await _db.EventReviews.AnyAsync(r => r.EventId == eventId && r.ClientId == clientId)
-            : (!string.IsNullOrEmpty(clientIp) && await _db.EventReviews.AnyAsync(r => r.EventId == eventId && r.ClientIp == clientIp));
-
-        if (duplicate)
-        {
-            return (false, "already_rated", null);
         }
 
         _db.EventReviews.Add(new EventReview
@@ -146,39 +148,28 @@ public sealed class EfEventRepository : IEventRepository
         return (true, null, MapToDto(ev));
     }
 
-    public async Task<List<EventReviewDto>> GetReviewsAsync(int eventId)
-    {
-        return await _db.EventReviews
+    public Task<List<EventReviewDto>> GetReviewsAsync(int eventId) =>
+        _db.EventReviews
             .AsNoTracking()
             .Where(r => r.EventId == eventId)
             .OrderByDescending(r => r.CreatedAt)
             .Select(r => new EventReviewDto(r.Id, r.Rating, r.Comment, r.CreatedAt))
             .ToListAsync();
-    }
 
     public async Task<(bool Success, string? ErrorCode)> AddReportAsync(
         int eventId, string category, string comment, string clientId, string clientIp)
     {
-        var ev = await _db.Events.FindAsync(eventId);
-        if (ev == null)
-        {
+        if (!await EventExistsAsync(eventId))
             return (false, "event_not_found");
-        }
 
-        bool duplicate = !string.IsNullOrEmpty(clientId)
-            ? await _db.EventReports.AnyAsync(r => r.EventId == eventId && r.ClientId == clientId)
-            : (!string.IsNullOrEmpty(clientIp) && await _db.EventReports.AnyAsync(r => r.EventId == eventId && r.ClientIp == clientIp));
-
-        if (duplicate)
-        {
+        if (await IsDuplicateByClientAsync(_db.EventReports.AsNoTracking(), eventId, clientId, clientIp))
             return (false, "already_reported");
-        }
 
         _db.EventReports.Add(new EventReport
         {
             EventId = eventId,
             Category = category,
-            Comment = comment ?? string.Empty,
+            Comment = comment,
             ClientId = clientId,
             ClientIp = clientIp,
             CreatedAt = DateTime.UtcNow
