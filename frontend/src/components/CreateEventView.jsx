@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
 
-const empty = { title: "", description: "", date: "", totalTickets: 50, venueId: "" };
+// Category event and filter category (додано поле category)
+const empty = { title: "", description: "", category: "", date: "", totalTickets: 50, venueId: "" };
 
 export default function CreateEventView({ onCreated }) {
   const [form, setForm] = useState(empty);
@@ -30,6 +31,8 @@ export default function CreateEventView({ onCreated }) {
       await api.createEvent({
         title: form.title,
         description: form.description,
+        // Category event and filter category
+        category: form.category,
         date: form.date ? new Date(form.date).toISOString() : "0001-01-01T00:00:00Z",
         totalTickets: Number(form.totalTickets),
         venueId: Number(form.venueId),
@@ -50,6 +53,24 @@ export default function CreateEventView({ onCreated }) {
       <label>
         Назва
         <input value={form.title} onChange={set("title")} maxLength={200} />
+      </label>
+
+      {/* Category event and filter category */}
+      <label>
+        Категорія
+        <input
+          list="event-categories"
+          placeholder="Наприклад: Кіно, Концерт, Театр"
+          value={form.category}
+          onChange={set("category")}
+          maxLength={50}
+        />
+        <datalist id="event-categories">
+          <option value="Кіно" />
+          <option value="Концерт" />
+          <option value="Театр" />
+          <option value="Лекція" />
+        </datalist>
       </label>
 
       <label>

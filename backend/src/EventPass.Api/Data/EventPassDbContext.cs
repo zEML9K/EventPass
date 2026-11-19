@@ -33,6 +33,9 @@ public sealed class EventPassDbContext : DbContext
             e.HasOne(x => x.Venue).WithMany()
                 .HasForeignKey(x => x.VenueId)
                 .IsRequired().OnDelete(DeleteBehavior.Restrict);
+
+            // Category event and filter category
+            e.Property(x => x.Category).IsRequired().HasMaxLength(50).HasDefaultValue("");
         });
 
         modelBuilder.Entity<Booking>(e =>

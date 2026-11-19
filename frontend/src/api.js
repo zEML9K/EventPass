@@ -36,7 +36,11 @@ const post = (path, body) =>
   request(path, { method: "POST", body: JSON.stringify(body) });
 
 export const api = {
-  getEvents: () => request("/api/events"),
+  // Category event and filter category
+  getEvents: (category) => {
+    const query = category ? `?category=${encodeURIComponent(category)}` : "";
+    return request(`/api/events${query}`);
+  },
   getEvent: (id) => request(`/api/events/${id}`),
   getVenues: () => request("/api/venues"),
   getBookings: () => request("/api/bookings"),

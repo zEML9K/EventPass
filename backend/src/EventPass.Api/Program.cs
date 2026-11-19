@@ -1,4 +1,4 @@
-using EventPass.Api;
+﻿using EventPass.Api;
 using EventPass.Api.DTO;
 using EventPass.Api.Data;
 using EventPass.Api.Entity;
@@ -55,15 +55,16 @@ using (var scope = app.Services.CreateScope())
             Date = DateTime.UtcNow.AddDays(7),
             TotalTickets = 25,
             AvailableSeats = 25,
-            VenueId = venue.Id
+            VenueId = venue.Id,
+            Category = "Кіно"
         });
         db.SaveChanges();
     }
 }
 
 // UC-01: Список подій
-app.MapGet("/api/events", async (EventService service) =>
-    Results.Ok(await service.GetAllAsync()));
+app.MapGet("/api/events", async (string? category, EventService service) =>
+    Results.Ok(await service.GetAllAsync(category)));
 
 // UC-01: Одна подія
 app.MapGet("/api/events/{id:int}", async (int id, EventService service) =>

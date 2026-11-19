@@ -3,35 +3,47 @@ import { api } from "../api.js";
 import { formatDate } from "../format.js";
 import BookingPanel from "./BookingPanel.jsx";
 
+// Category event and filter category
+const CATEGORIES = ["Кіно", "Концерт", "Театр", "Лекція"];
+
 export default function EventsView() {
   const [events, setEvents] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
+  // Category event and filter category
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Category event and filter category
   useEffect(() => {
+    setLoading(true);
+    setError("");
     api
-      .getEvents()
-      .then(setEvents)
+      .getEvents(selectedCategory)
+      .then((list) => {
+        setEvents(list);
+        setSelectedId((prev) => (list.some((e) => e.id === prev) ? prev : null));
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedCategory]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return events;
-    return events.filter((e) => e.title.toLowerCase().includes(q));
-  }, [events, query]);
+    const cat = selectedCategory.trim().toLowerCase();
 
-  const selected = events.find((e) => e.id === selectedId);
+    return events.filter((e) => {
+      const matchesTitle = !q || e.title.toLowerCase().includes(q);
+      const matchesCategory = !cat || (e.category ?? "").toLowerCase() === cat;
+      return matchesTitle && matchesCategory;
+    });
+  }, [events, query, selectedCategory]);
+
+  const selected = filtered.find((e) => e.id === selectedId);
 
   const updateEvent = (updated) =>
     setEvents((list) => list.map((e) => (e.id === updated.id ? updated : e)));
-
-  if (loading) return <p className="muted">Завантаження…</p>;
-  if (error) return <p className="alert error">{error}</p>;
-  if (events.length === 0) return <p className="muted">Подій поки немає.</p>;
 
   return (
     <div className="split">
@@ -44,9 +56,34 @@ export default function EventsView() {
           onChange={(e) => setQuery(e.target.value)}
         />
 
-        <div className="list">
-          {filtered.length === 0 && <p className="muted">За запитом «{query}» нічого не знайдено.</p>}
+        {/* Category event and filter category */}
+        <select
+          className="search"
+          aria-label="Фільтр за категорією"
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+        >
+          <option value="">Усі категорії</option>
+          {CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
 
+        {loading && <p className="muted">Завантаження…</p>}
+        {error && <p className="alert error">{error}</p>}
+        {!loading && !error && filtered.length === 0 && (
+          <p className="muted">
+            {query.trim()
+              ? `За запитом «${query}» нічого не знайдено.`
+              : selectedCategory
+              ? `Подій у категорії «${selectedCategory}» не знайдено.`
+              : "Подій поки немає."}
+          </p>
+        )}
+
+        <div className="list">
           {filtered.map((ev) => (
             <article
               key={ev.id}
@@ -59,6 +96,8 @@ export default function EventsView() {
                   {ev.availableSeats > 0 ? `${ev.availableSeats} з ${ev.totalTickets}` : "Квитків немає"}
                 </span>
               </div>
+              {/* Category event and filter category */}
+              {ev.category && <p className="muted">Категорія: {ev.category}</p>}
               <p className="muted">{formatDate(ev.date)}</p>
               <p className="muted">{ev.venueName}</p>
             </article>
@@ -72,6 +111,13 @@ export default function EventsView() {
             <h2>{selected.title}</h2>
             <p>{selected.description}</p>
             <dl>
+              {/* Category event and filter category */}
+              {selected.category && (
+                <>
+                  <dt>Категорія</dt>
+                  <dd>{selected.category}</dd>
+                </>
+              )}
               <dt>Дата</dt>
               <dd>{formatDate(selected.date)}</dd>
               <dt>Місце</dt>
