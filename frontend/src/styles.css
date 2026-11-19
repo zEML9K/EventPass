@@ -143,3 +143,42 @@ button.danger:hover:not(:disabled) { background: var(--err-fg); color: #fff; }
 .booking-body li.ticket-row { justify-content: flex-start; align-items: center; gap: 14px; }
 .ticket-info { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
 .qr-thumb { width: 112px; height: 112px; flex-shrink: 0; image-rendering: pixelated; background: #fff; padding: 5px; border-radius: 8px; }
+
+/* --- Події: обране, деталі, оцінки, скарги, відгуки, модальне вікно --- */
+.card-actions { display: flex; gap: .5rem; align-items: center; }
+
+.fav-btn,
+.fav-btn:hover:not(:disabled) {
+  background: transparent; border: none; cursor: pointer;
+  padding: 0; line-height: 1; font-size: 1.25rem; color: var(--muted);
+}
+.fav-btn.large { font-size: 1.6rem; }
+.fav-btn.active { color: #f59e0b; }
+
+.detail-head { display: flex; justify-content: space-between; align-items: flex-start; }
+
+.section-gap { margin-top: 1rem; }
+.form-dashed { border-style: dashed; }
+
+.btn-report,
+.btn-report:hover:not(:disabled) { background: #c53030; }
+
+.review-item { border-top: 1px solid #eee; padding-top: .5rem; margin-top: .5rem; }
+.review-comment { margin: .25rem 0 0; }
+
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000; padding: 16px; overflow-y: auto;
+}
+.modal {
+  position: relative; max-width: 600px; width: 100%;
+  max-height: 90vh; overflow-y: auto; background: var(--surface);
+}
+.modal-close,
+.modal-close:hover:not(:disabled) {
+  position: absolute; top: 12px; right: 12px;
+  background: transparent; border: none; cursor: pointer;
+  font-size: 1.5rem; color: var(--text); line-height: 1;
+}
