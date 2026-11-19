@@ -1,4 +1,4 @@
-using EventPass.Api.DTO;
+﻿using EventPass.Api.DTO;
 
 namespace EventPass.Api;
 
@@ -28,6 +28,10 @@ public static class ApiResults
         ["ticket_not_found"]         = (404, "Квиток не знайдено."),
         ["ticket_already_used"]      = (409, "Квиток вже використано."),
         ["ticket_cancelled"]         = (409, "Квиток скасовано."),
+        // Event ratings
+        ["invalid_rating"]           = (400, "Оцінка має бути від 1 до 5."),
+        ["invalid_review_comment"]   = (400, "Коментар не може перевищувати 300 символів."),
+        ["already_rated"]            = (409, "Ви вже залишили оцінку для цієї події."),
     };
 
     public static IResult FromError(string? code)
@@ -38,3 +42,4 @@ public static class ApiResults
         return Results.Json(new ApiError(code ?? "invalid_request", "Некоректний запит."), statusCode: 400);
     }
 }
+

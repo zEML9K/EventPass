@@ -27,8 +27,8 @@ public class EventServiceTests
     private static EventService NewService(EventPassDbContext db) =>
         new(new EfEventRepository(db));
 
-    private static CreateEventRequest Req(int venueId, int tickets = 50, string title = "Conf", DateTime? date = null) =>
-        new(title, "Desc", date ?? DateTime.UtcNow.AddDays(5), tickets, venueId);
+    private static CreateEventRequest Req(int venueId, int tickets = 50, string title = "Conf", DateTime? date = null, string category = "Кіно") =>
+        new(title, "Desc", date ?? DateTime.UtcNow.AddDays(5), tickets, venueId, category);
 
     [Fact]
     public async Task CreateEvent_ShouldSucceed_AndSetAvailableSeats()
@@ -80,5 +80,36 @@ public class EventServiceTests
         var (db, _) = await SetupAsync();
         var result = await NewService(db).GetByIdAsync(42);
         Assert.Equal("event_not_found", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task CreateEvent_ShouldPersistCategory_AndFilterByCategory()
+    {
+        var (db, venue) = await SetupAsync();
+        var service = NewService(db);
+
+        await service.CreateEventAsync(new CreateEventRequest("Фільм 1", "Опис", DateTime.UtcNow.AddDays(2), 10, venue.Id, "Кіно"));
+        await service.CreateEventAsync(new CreateEventRequest("Рок-вечір", "Опис", DateTime.UtcNow.AddDays(3), 10, venue.Id, "Концерт"));
+
+        var cinemaOnly = await service.GetAllAsync("Кіно");
+        var emptyTheatre = await service.GetAllAsync("Театр");
+
+        Assert.Single(cinemaOnly);
+        Assert.Equal("Кіно", cinemaOnly[0].Category);
+        Assert.Empty(emptyTheatre);
+    }
+
+    [Fact]
+    public async Task CreateEvent_ShouldFail_WhenCategoryExceeds50Chars()
+    {
+        var (db, venue) = await SetupAsync();
+        var longCategory = new string('К', 51);
+
+        var result = await NewService(db).CreateEventAsync(
+            new CreateEventRequest("Подія", "Опис", DateTime.UtcNow.AddDays(2), 10, venue.Id, longCategory));
+
+        Assert.False(result.Success);
+        Assert.Equal("category_too_long", result.ErrorCode);
+        Assert.Empty(db.Events);
     }
 }

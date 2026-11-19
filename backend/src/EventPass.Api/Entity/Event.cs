@@ -12,6 +12,7 @@ public sealed class Event
     public int VenueId { get; set; }
     public Venue? Venue { get; set; }
 
-    // Category event and filter category
     public string Category { get; set; } = string.Empty;
+    public double AverageRating { get; set; }
+    public int ReviewsCount { get; set; }
 }
