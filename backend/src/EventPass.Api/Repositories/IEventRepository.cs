@@ -18,4 +18,7 @@ public interface IEventRepository
 
     Task<(bool Success, string? ErrorCode)> AddReportAsync(
         int eventId, string category, string comment, string clientId, string clientIp);
+
+    Task<List<UserReviewDto>> GetReviewsByClientAsync(string clientId);
+    Task<List<UserReportDto>> GetReportsByClientAsync(string clientId);
 }

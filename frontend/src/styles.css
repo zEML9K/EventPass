@@ -182,3 +182,20 @@ button.danger:hover:not(:disabled) { background: var(--err-fg); color: #fff; }
   background: transparent; border: none; cursor: pointer;
   font-size: 1.5rem; color: var(--text); line-height: 1;
 }
+
+/* --- Авторизація --- */
+.auth-box { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.badge.role { background: var(--border); color: var(--text); font-weight: 600; }
+.alert.info { background: var(--border); color: var(--muted); }
+.alert.info .link { font-size: inherit; text-decoration: underline; }
+
+/* Текстові кнопки: без заливки при наведенні */
+button.link:hover:not(:disabled) {
+  background: none;
+  text-decoration: underline;
+}
+
+/* Контурні кнопки: легка підсвітка замість суцільної заливки */
+button.secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}

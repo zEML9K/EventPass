@@ -10,7 +10,7 @@ public sealed class EfBookingRepository : IBookingRepository
 
     public EfBookingRepository(EventPassDbContext db) => _db = db;
 
-    public async Task<(bool Success, string? ErrorCode, Booking? Booking)> CreateBookingAsync(int eventId, int quantity)
+    public async Task<(bool Success, string? ErrorCode, Booking? Booking)> CreateBookingAsync(int eventId, int quantity, int? userId = null)
     {
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
@@ -28,6 +28,7 @@ public sealed class EfBookingRepository : IBookingRepository
         {
             EventId = eventId,
             Quantity = quantity,
+            UserId = userId,
             Status = BookingStatus.Confirmed
         };
 
@@ -104,7 +105,7 @@ public sealed class EfBookingRepository : IBookingRepository
         return (true, null);
     }
 
-    public Task<List<Booking>> GetBookingsAsync(int? bookingId = null)
+    public Task<List<Booking>> GetBookingsAsync(int? bookingId = null, int? userId = null)
     {
         var query = _db.Bookings.AsNoTracking()
             .Include(b => b.Event)
@@ -113,6 +114,9 @@ public sealed class EfBookingRepository : IBookingRepository
 
         if (bookingId != null)
             query = query.Where(b => b.Id == bookingId);
+
+         if (userId != null)
+            query = query.Where(b => b.UserId == userId);
 
         return query
             .OrderByDescending(b => b.CreatedAt)

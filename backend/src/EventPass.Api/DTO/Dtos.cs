@@ -47,3 +47,16 @@ public record ApiError(string Code, string Message);
 
 public record CreateReportRequest(string Category, string? Comment = null, string? ClientId = null);
 public record EventReportDto(int Id, string Category, string Comment, DateTime CreatedAt);
+
+public record RegisterRequest(string Username, string Password, string Role);
+public record LoginRequest(string Username, string Password, string Role);
+public record AuthResponse(int UserId, string Username, string Role, string ClientId, string Token);
+
+public record UserProfileDto(int UserId, string Username, string Role, string ClientId, DateTime CreatedAt);
+public record UserReviewDto(int Id, int EventId, string EventTitle, int Rating, string Comment, DateTime CreatedAt);
+public record UserReportDto(int Id, int EventId, string EventTitle, string Category, string Comment, DateTime CreatedAt);
+public record UserActivityDto(
+    UserProfileDto Profile,
+    List<BookingDetailsDto> Bookings,
+    List<UserReviewDto> Reviews,
+    List<UserReportDto> Reports);

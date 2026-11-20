@@ -1,14 +1,6 @@
-﻿const BASE = import.meta.env.VITE_API_URL ?? "";
+﻿import { clearSession, getToken, UNAUTHORIZED_EVENT } from "./auth/session.js";
 
-function getClientId() {
-  const key = "eventpass_client_id";
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    localStorage.setItem(key, id);
-  }
-  return id;
-}
+const BASE = import.meta.env.VITE_API_URL ?? "";
 
 export class ApiError extends Error {
   constructor(message, code, status) {
@@ -18,12 +10,19 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path, options = {}) {
+export async function request(path, options = {}) {
+  const { skipAuth, headers, ...rest } = options;
+  const token = skipAuth ? null : getToken();
+
   let res;
   try {
     res = await fetch(`${BASE}${path}`, {
-      headers: { "Content-Type": "application/json" },
-      ...options,
+      ...rest,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
     });
   } catch {
     throw new ApiError("Немає зв'язку з сервером.", "network_error", 0);
@@ -31,17 +30,26 @@ async function request(path, options = {}) {
 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
+    // Токен був, але сервер його не прийняв — сесія недійсна
+    if (res.status === 401 && token) {
+      clearSession();
+      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+    }
+    const fallback =
+      res.status === 401 ? "Потрібна авторизація."
+      : res.status === 403 ? "Недостатньо прав для цієї дії."
+      : `Помилка ${res.status}`;
     throw new ApiError(
-      data?.message ?? data?.title ?? `Помилка ${res.status}`,
-      data?.code ?? "unknown",
+      data?.message ?? data?.title ?? fallback,
+      data?.code ?? (res.status === 403 ? "forbidden_role" : "unknown"),
       res.status
     );
   }
   return data;
 }
 
-const post = (path, body) =>
-  request(path, { method: "POST", body: JSON.stringify(body) });
+export const post = (path, body, options = {}) =>
+  request(path, { method: "POST", body: JSON.stringify(body), ...options });
 
 export const api = {
   getEvents: (category) => {
@@ -50,10 +58,9 @@ export const api = {
   },
   getEvent: (id) => request(`/api/events/${id}`),
   getEventReviews: (id) => request(`/api/events/${id}/reviews`),
-  rateEvent: (id, rating, comment) =>
-    post(`/api/events/${id}/reviews`, { rating, comment, clientId: getClientId() }),
-  reportEvent: (id, category, comment) =>
-    post(`/api/events/${id}/reports`, { category, comment, clientId: getClientId() }),
+  // clientId більше не передаємо: сервер бере його з акаунту
+  rateEvent: (id, rating, comment) => post(`/api/events/${id}/reviews`, { rating, comment }),
+  reportEvent: (id, category, comment) => post(`/api/events/${id}/reports`, { category, comment }),
   getVenues: () => request("/api/venues"),
   getBookings: () => request("/api/bookings"),
   cancelBooking: (id) => post(`/api/bookings/${id}/cancel`, {}),

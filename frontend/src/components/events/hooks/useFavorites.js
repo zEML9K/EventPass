@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FAVORITES_KEY } from "./constants.js";
-import { loadLocalStorageSet } from "./storage.js";
+import { loadLocalStorageSet, persistLocalStorageSet } from "./storage.js";
 
 export default function useFavorites() {
   const [favoriteIds, setFavoriteIds] = useState(() => loadLocalStorageSet(FAVORITES_KEY));
@@ -14,7 +14,7 @@ export default function useFavorites() {
       next.add(eventId);
     }
     setFavoriteIds(next);
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify([...next]));
+    persistLocalStorageSet(FAVORITES_KEY, next);
   }
 
   return { favoriteIds, toggleFavorite };

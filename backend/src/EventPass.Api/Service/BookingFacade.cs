@@ -19,12 +19,12 @@ public sealed class BookingFacade
         _qrCodeService = qrCodeService;
     }
 
-    public async Task<(bool Success, string? ErrorCode, BookingResponse? Result)> BookTicketsAsync(BookTicketRequest request)
+    public async Task<(bool Success, string? ErrorCode, BookingResponse? Result)> BookTicketsAsync(BookTicketRequest request, int? userId = null)
     {
         if (request.Quantity <= 0)
             return (false, "invalid_quantity", null);
 
-        var (success, errorCode, booking) = await _bookingRepository.CreateBookingAsync(request.EventId, request.Quantity);
+        var (success, errorCode, booking) = await _bookingRepository.CreateBookingAsync(request.EventId, request.Quantity, userId);
         if (!success || booking == null)
             return (false, errorCode, null);
 
@@ -35,8 +35,13 @@ public sealed class BookingFacade
         return (true, null, new BookingResponse(booking.Id, booking.EventId, booking.Quantity, ticketDtos));
     }
 
-    public async Task<(bool Success, string? ErrorCode, BookingDetailsDto? Result)> CancelBookingAsync(int bookingId)
+    public async Task<(bool Success, string? ErrorCode, BookingDetailsDto? Result)> CancelBookingAsync(int bookingId, int? userId = null)
     {
+        if (userId != null && await GetBookingByIdAsync(bookingId, userId) == null)
+        {
+            return (false, "booking_not_found", null);
+        }
+
         var (success, errorCode) = await _bookingRepository.CancelBookingAsync(bookingId);
         if (!success)
             return (false, errorCode, null);
@@ -47,15 +52,15 @@ public sealed class BookingFacade
             : (true, null, details);
     }
 
-    public async Task<List<BookingDetailsDto>> GetBookingsAsync()
+    public async Task<List<BookingDetailsDto>> GetBookingsAsync(int? userId = null)
     {
-        var bookings = await _bookingRepository.GetBookingsAsync();
+        var bookings = await _bookingRepository.GetBookingsAsync(userId: userId);
         return await MapBookingsWithHistoryAsync(bookings);
     }
 
-    public async Task<BookingDetailsDto?> GetBookingByIdAsync(int bookingId)
+    public async Task<BookingDetailsDto?> GetBookingByIdAsync(int bookingId, int? userId = null)
     {
-        var bookings = await _bookingRepository.GetBookingsAsync(bookingId);
+        var bookings = await _bookingRepository.GetBookingsAsync(bookingId, userId);
         var mapped = await MapBookingsWithHistoryAsync(bookings);
         return mapped.FirstOrDefault();
     }

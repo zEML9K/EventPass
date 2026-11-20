@@ -21,6 +21,8 @@ builder.Services.AddScoped<IBookingRepository, EfBookingRepository>();
 builder.Services.AddScoped<EventCatalogFacade>();
 builder.Services.AddScoped<EventEngagementFacade>();
 builder.Services.AddScoped<BookingFacade>();
+builder.Services.AddScoped<IUserRepository, EfUserRepository>();
+builder.Services.AddScoped<AuthFacade>();
 
 var app = builder.Build();
 
@@ -36,6 +38,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapEventEndpoints();
+app.MapAuthEndpoints();
 app.MapBookingEndpoints();
 
 app.Run();

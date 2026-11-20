@@ -11,7 +11,7 @@ namespace EventPass.Tests;
 
 public class CancelBookingTests
 {
-    private static async Task<(EventPassDbContext Db, BookingService Service, int EventId, int BookingId)> SetupAsync(int quantity = 3)
+    private static async Task<(EventPassDbContext Db, BookingFacade facade, int EventId, int BookingId)> SetupAsync(int quantity = 3)
     {
         var connection = new SqliteConnection("Filename=:memory:");
         connection.Open();
@@ -25,9 +25,9 @@ public class CancelBookingTests
         db.Events.Add(ev);
         await db.SaveChangesAsync();
 
-        var service = new BookingService(new EfBookingRepository(db));
-        var booked = await service.BookTicketsAsync(new BookTicketRequest(ev.Id, quantity));
-        return (db, service, ev.Id, booked.Result!.BookingId);
+        var facade = new BookingFacade(new EfBookingRepository(db));
+        var booked = await facade.BookTicketsAsync(new BookTicketRequest(ev.Id, quantity));
+        return (db, facade, ev.Id, booked.Result!.BookingId);
     }
 
     [Fact]

@@ -9,6 +9,8 @@ public sealed class Booking
 
     public int EventId { get; set; }
     public Event? Event { get; set; }
+    public int? UserId { get; set; }
+    public User? User { get; set; }
 
     public List<QrTicket> Tickets { get; set; } = new();
 }

@@ -13,6 +13,7 @@ public sealed class EventPassDbContext : DbContext
     public DbSet<BookingHistory> BookingHistories => Set<BookingHistory>();
     public DbSet<EventReview> EventReviews => Set<EventReview>();
     public DbSet<EventReport> EventReports => Set<EventReport>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -77,6 +78,9 @@ public sealed class EventPassDbContext : DbContext
             e.HasOne(x => x.Event).WithMany()
                 .HasForeignKey(x => x.EventId)
                 .IsRequired().OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.User).WithMany()
+                .HasForeignKey(x => x.UserId)
+                .IsRequired(false).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<QrTicket>(e =>
@@ -100,6 +104,20 @@ public sealed class EventPassDbContext : DbContext
             e.HasOne(x => x.Booking).WithMany()
                 .HasForeignKey(x => x.BookingId)
                 .IsRequired().OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<User>(e =>
+        {
+            e.ToTable("Users");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Username).IsRequired().HasMaxLength(50);
+            e.Property(x => x.PasswordHash).IsRequired().HasMaxLength(200);
+            e.Property(x => x.ClientId).IsRequired().HasMaxLength(64);
+            e.Property(x => x.SessionTokenHash).HasMaxLength(64);
+            e.Property(x => x.Role).HasConversion<string>().HasMaxLength(20);
+            e.HasIndex(x => x.Username).IsUnique();
+            e.HasIndex(x => x.ClientId).IsUnique();
+            e.HasIndex(x => x.SessionTokenHash);
         });
     }
 }

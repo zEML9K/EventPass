@@ -24,7 +24,7 @@ public class EventServiceTests
         return (db, venue);
     }
 
-    private static EventService NewService(EventPassDbContext db) =>
+    private static EventCatalogFacade NewService(EventPassDbContext db) =>
         new(new EfEventRepository(db));
 
     private static CreateEventRequest Req(int venueId, int tickets = 50, string title = "Conf", DateTime? date = null, string category = "Кіно") =>
@@ -78,7 +78,7 @@ public class EventServiceTests
     public async Task GetById_ShouldReturnNotFound_ForMissingEvent()
     {
         var (db, _) = await SetupAsync();
-        var result = await NewService(db).GetByIdAsync(42);
+        var result = await NewService(db).GetEventByIdAsync(42);
         Assert.Equal("event_not_found", result.ErrorCode);
     }
 
@@ -91,8 +91,8 @@ public class EventServiceTests
         await service.CreateEventAsync(new CreateEventRequest("Фільм 1", "Опис", DateTime.UtcNow.AddDays(2), 10, venue.Id, "Кіно"));
         await service.CreateEventAsync(new CreateEventRequest("Рок-вечір", "Опис", DateTime.UtcNow.AddDays(3), 10, venue.Id, "Концерт"));
 
-        var cinemaOnly = await service.GetAllAsync("Кіно");
-        var emptyTheatre = await service.GetAllAsync("Театр");
+        var cinemaOnly = await service.GetEventsAsync("Кіно");
+        var emptyTheatre = await service.GetEventsAsync("Театр");
 
         Assert.Single(cinemaOnly);
         Assert.Equal("Кіно", cinemaOnly[0].Category);

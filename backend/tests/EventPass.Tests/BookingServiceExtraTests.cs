@@ -20,7 +20,7 @@ public class BookingServiceExtraTests
         return db;
     }
 
-    private static BookingService NewService(EventPassDbContext db, IQrCodeService? qr = null) =>
+    private static BookingFacade NewService(EventPassDbContext db, IQrCodeService? qr = null) =>
         new(new EfBookingRepository(db), qr);
 
     [Fact]

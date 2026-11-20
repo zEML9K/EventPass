@@ -68,4 +68,9 @@ public sealed class EventEngagementFacade
             normalizedClientId,
             normalizedIp);
     }
+    public Task<List<UserReviewDto>> GetUserReviewsAsync(string clientId) =>
+    _repo.GetReviewsByClientAsync(clientId);
+
+    public Task<List<UserReportDto>> GetUserReportsAsync(string clientId) =>
+        _repo.GetReportsByClientAsync(clientId);
 }

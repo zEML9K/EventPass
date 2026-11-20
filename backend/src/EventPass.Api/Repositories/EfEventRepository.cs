@@ -76,18 +76,20 @@ public sealed class EfEventRepository : IEventRepository
 
     public async Task<List<EventDto>> GetEventsAsync(string? category = null)
     {
-        var query = _db.Events
+        var events = await _db.Events
             .AsNoTracking()
             .Include(e => e.Venue)
-            .AsQueryable();
+            .OrderBy(e => e.Date)
+            .ToListAsync();
 
         var filter = category?.Trim();
         if (!string.IsNullOrEmpty(filter))
         {
-            query = query.Where(e => e.Category.ToLower() == filter.ToLower());
+            events = events
+                .Where(e => string.Equals(e.Category, filter, StringComparison.CurrentCultureIgnoreCase))
+                .ToList();
         }
 
-        var events = await query.OrderBy(e => e.Date).ToListAsync();
         return events.Select(MapToDto).ToList();
     }
 
@@ -178,4 +180,20 @@ public sealed class EfEventRepository : IEventRepository
         await _db.SaveChangesAsync();
         return (true, null);
     }
+
+    public Task<List<UserReviewDto>> GetReviewsByClientAsync(string clientId) =>
+        _db.EventReviews
+            .AsNoTracking()
+            .Where(r => r.ClientId == clientId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new UserReviewDto(r.Id, r.EventId, r.Event!.Title, r.Rating, r.Comment, r.CreatedAt))
+            .ToListAsync();
+
+    public Task<List<UserReportDto>> GetReportsByClientAsync(string clientId) =>
+        _db.EventReports
+            .AsNoTracking()
+            .Where(r => r.ClientId == clientId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new UserReportDto(r.Id, r.EventId, r.Event!.Title, r.Category, r.Comment, r.CreatedAt))
+            .ToListAsync();
 }

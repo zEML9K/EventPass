@@ -40,6 +40,16 @@ public static class ApiResults
         ["invalid_report_category"]  = (400, "Категорія скарги обов'язкова."),
         ["invalid_report_comment"]   = (400, "Коментар скарги не може перевищувати 500 символів."),
         ["already_reported"]         = (409, "Ви вже надіслали скаргу щодо цієї події."),
+
+        // Auth / roles
+        ["invalid_username"]    = (400, "Логін обов'язковий (3–50 символів)."),
+        ["invalid_password"]    = (400, "Пароль має містити від 6 до 100 символів."),
+        ["invalid_role"]        = (400, "Невідома роль. Допустимо: Visitor, Organizer, Controller."),
+        ["username_taken"]      = (409, "Користувач з таким логіном уже існує."),
+        ["invalid_credentials"] = (401, "Невірний логін або пароль."),
+        ["role_mismatch"]       = (403, "Обрана роль не відповідає ролі акаунту."),
+        ["unauthorized"]        = (401, "Потрібна авторизація."),
+        ["forbidden_role"]      = (403, "Ваша роль не має доступу до цієї дії."),
     };
 
     public static IResult FromError(string? code)
