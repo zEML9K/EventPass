@@ -46,15 +46,16 @@ public sealed class EventEngagementFacade
             normalizedIp);
     }
 
-    public async Task<(bool Success, string? ErrorCode)> ReportEventAsync(
+public async Task<(bool Success, string? ErrorCode)> ReportEventAsync(
         int eventId,
         CreateReportRequest request,
         string? clientIp = null)
     {
-        if (string.IsNullOrWhiteSpace(request.Category))
+        var category = request.Category?.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(category) || category.Length > 100)
             return (false, "invalid_report_category");
 
-        var comment = request.Comment ?? string.Empty;
+        var comment = request.Comment?.Trim() ?? string.Empty;
         if (comment.Length > 500)
             return (false, "invalid_report_comment");
 
@@ -63,7 +64,7 @@ public sealed class EventEngagementFacade
 
         return await _repo.AddReportAsync(
             eventId,
-            request.Category.Trim(),
+            category,
             comment,
             normalizedClientId,
             normalizedIp);
