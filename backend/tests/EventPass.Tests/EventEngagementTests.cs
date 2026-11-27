@@ -71,4 +71,29 @@ public class EventEngagementTests
         Assert.Equal("invalid_report_category", result.ErrorCode);
         Assert.Empty(db.EventReports);
     }
+
+    [Fact]
+    public async Task ReportDuplicateFails()
+    {
+        var (db, facade, eventId) = await SetupAsync();
+
+        var first = await facade.ReportEventAsync(eventId, new CreateReportRequest("Інше", "Перша", "client-1"));
+        var second = await facade.ReportEventAsync(eventId, new CreateReportRequest("Інше", "Друга", "client-1"));
+
+        Assert.True(first.Success);
+        Assert.False(second.Success);
+        Assert.Equal("already_reported", second.ErrorCode);
+        Assert.Single(db.EventReports);
+    }
+
+    [Fact]
+    public async Task RateEventInvalidRatingFails()
+    {
+        var (_, facade, eventId) = await SetupAsync();
+
+        var result = await facade.RateEventAsync(eventId, new RateEventRequest(0, "Погано", "client-1"));
+
+        Assert.False(result.Success);
+        Assert.Equal("invalid_rating", result.ErrorCode);
+    }
 }
